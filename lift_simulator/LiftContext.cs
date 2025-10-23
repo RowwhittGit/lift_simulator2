@@ -1,26 +1,23 @@
-﻿using lift_simulator;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using lift_simulator.States;
+using lift_simulator.Interfaces; // Add this
+using lift_simulator.Database;
 
 namespace lift_simulator
 {
     public class LiftContext
     {
         public ILiftState CurrentState { get; private set; }
-        public ILiftState DoorState { get; private set; }  // ← NEW: Track door state
+        public ILiftState DoorState { get; private set; }
         public DbConnection Db { get; private set; }
         public int CurrentFloor { get; set; } = 0;
-        public bool IsDoorOpen { get; set; } = false;  // ← NEW: Track door status
+        public bool IsDoorOpen { get; set; } = false;
 
         public LiftContext(DbConnection db)
         {
             Db = db;
             CurrentState = new IdleState();
-            DoorState = new DoorClosedState();  // ← NEW: Start with doors closed
+            DoorState = new DoorClosingState();
         }
 
         public void SetState(ILiftState newState)
@@ -28,7 +25,7 @@ namespace lift_simulator
             CurrentState = newState;
         }
 
-        public void SetDoorState(ILiftState newDoorState)  // ← NEW: Method to change door state
+        public void SetDoorState(ILiftState newDoorState)
         {
             DoorState = newDoorState;
         }

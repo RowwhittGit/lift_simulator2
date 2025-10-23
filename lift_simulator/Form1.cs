@@ -1,271 +1,244 @@
-﻿using lift_simulator.States;
-using System;
-using System.ComponentModel;
+﻿using System;
+using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using lift_simulator.Controllers;
+using lift_simulator.Database;
 
 namespace lift_simulator
 {
     public partial class Form1 : Form
     {
-        private LiftContext liftContext;
-        private bool isBusy = false;
-
-        // Door animation variables
-        private bool isAnimatingDoor = false;
-        private bool isDoorOpening = false;
-        private int doorAnimationStep = 0;
-        private const int DOOR_ANIMATION_STEPS = 30;
-        private int leftDoorStartX;
-        private int rightDoorStartX;
+        private readonly LiftController _liftController;
+        private readonly DbConnection _db;
 
         public Form1()
         {
             InitializeComponent();
 
-            // Initialize DB and context
-            var db = new DbConnection();
-            liftContext = new LiftContext(db);
+            // Initialize DB and controller
+            _db = new DbConnection();
+            _liftController = new LiftController(_db);
 
-            // Setup background worker
-            liftWorker.WorkerReportsProgress = true;
-            liftWorker.WorkerSupportsCancellation = true;
-            liftWorker.DoWork += liftWorker_DoWork;
-            liftWorker.RunWorkerCompleted += liftWorker_RunWorkerCompleted;
-
-            // Setup door animation timer
-            doorTimer.Interval = 20; // 20ms per frame = smooth animation
-            doorTimer.Tick += doorTimer_Tick;
-
-            // Set lift to ground floor position
-            lift_movable.Top = 545;
-
-            // Store initial door positions
-            leftDoorStartX = ground_lift_left_door_btn.Left;
-            rightDoorStartX = ground_lift_right_door_btn.Left;
-
-            // Initialize with closed door state
-            liftContext.SetDoorState(new DoorClosedState());
-            liftContext.DoorState.Enter(liftContext);
-
-            // Wire up button clicks
-            ground_call_button.Click += ground_call_button_Click;
-            first_call_button.Click += first_call_button_Click;
-            ground_btn.Click += ground_btn_Click;
-            first_btn.Click += first_btn_Click;
-            open_lift_btn.Click += open_lift_btn_Click;
-            close_lift_btn.Click += close_lift_btn_Click;
+            // Subscribe to controller events for UI feedback
+            _liftController.OnStatusChanged += status => UpdateStatus(status);
+            _liftController.OnFloorChanged += floor => UpdateLiftPosition(floor);
+            _liftController.OnDoorStateChanged += state => AnimateDoor(state);
         }
+
+        // === UI Updates ===
+
+        private void UpdateStatus(string status)
+        {
+            // Ensure we're on the UI thread
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => UpdateStatus(status)));
+                return;
+            }
+
+            // Add to DataGridView safely
+            dataGridView1.Rows.Add(DateTime.Now.ToString("HH:mm:ss"), status);
+
+            // Auto-scroll to latest entry
+            if (dataGridView1.Rows.Count > 0)
+            {
+                dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
+            }
+        }
+
+        private void UpdateLiftPosition(int floor)
+        {
+            // Ensure we're on the UI thread
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => UpdateLiftPosition(floor)));
+                return;
+            }
+
+            // Animate lift moving visually (0 = Ground, 1 = First)
+            if (floor == 0)
+            {
+                AnimateLiftMovement(545); // Ground floor position
+            }
+            else if (floor == 1)
+            {
+                AnimateLiftMovement(120); // First floor position
+            }
+        }
+
+        private async void AnimateLiftMovement(int targetY)
+        {
+            // Smooth animation
+            int currentY = lift_movable.Top;
+            int step = (targetY > currentY) ? 5 : -5;
+
+            while ((step > 0 && lift_movable.Top < targetY) ||
+                   (step < 0 && lift_movable.Top > targetY))
+            {
+                lift_movable.Top += step;
+                await Task.Delay(20); // Smooth animation delay
+            }
+
+            lift_movable.Top = targetY; // Ensure exact position
+        }
+
+        private void AnimateDoor(string state)
+        {
+            // Ensure we're on the UI thread
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => AnimateDoor(state)));
+                return;
+            }
+
+            if (state == "Open")
+            {
+                AnimateDoorOpening();
+            }
+            else if (state == "Closed")
+            {
+                AnimateDoorClosing();
+            }
+        }
+
+        private async void AnimateDoorOpening()
+        {
+            // Determine which floor's doors to animate based on lift position
+            PictureBox leftDoor, rightDoor;
+
+            if (_liftController.CurrentFloor == 0)
+            {
+                leftDoor = ground_lift_left_door_btn;
+                rightDoor = ground_lift_right_door_btn;
+            }
+            else
+            {
+                leftDoor = first_lift_left_door_btn;
+                rightDoor = first_lift_right_door_btn;
+            }
+
+            // Save original positions
+            int originalLeftX = leftDoor.Left;
+            int originalRightX = rightDoor.Left;
+
+            // Animate doors opening
+            for (int i = 0; i < 30; i++)
+            {
+                leftDoor.Left -= 2;
+                rightDoor.Left += 2;
+                await Task.Delay(30);
+            }
+        }
+
+        private async void AnimateDoorClosing()
+        {
+            // Determine which floor's doors to animate
+            PictureBox leftDoor, rightDoor;
+            int targetLeftX, targetRightX;
+
+            if (_liftController.CurrentFloor == 0)
+            {
+                leftDoor = ground_lift_left_door_btn;
+                rightDoor = ground_lift_right_door_btn;
+                targetLeftX = 79;  // Original position from designer
+                targetRightX = 144; // Original position from designer
+            }
+            else
+            {
+                leftDoor = first_lift_left_door_btn;
+                rightDoor = first_lift_right_door_btn;
+                targetLeftX = 79;
+                targetRightX = 144;
+            }
+
+            // Animate doors closing back to original position
+            while (leftDoor.Left < targetLeftX)
+            {
+                leftDoor.Left += 2;
+                rightDoor.Left -= 2;
+                await Task.Delay(30);
+            }
+
+            // Ensure exact position
+            leftDoor.Left = targetLeftX;
+            rightDoor.Left = targetRightX;
+        }
+
+        // === Event Handlers ===
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            RefreshLogs();
+            // Setup DataGridView columns
+            dataGridView1.Columns.Clear();
+            dataGridView1.Columns.Add("Time", "Time");
+            dataGridView1.Columns.Add("Status", "Status");
+
+            // Optional: Adjust column widths
+            dataGridView1.Columns["Time"].Width = 100;
+            dataGridView1.Columns["Status"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            // Load past events from database
+            LoadPastEvents();
         }
 
-        // Call button handlers
-        private void ground_call_button_Click(object sender, EventArgs e)
+        private void LoadPastEvents()
         {
-            if (!isBusy && liftContext.CurrentFloor != 0)
-                StartLift(0);
+            try
+            {
+                var events = _db.GetAllEvents();
+
+                foreach (System.Data.DataRow row in events.Rows)
+                {
+                    string time = Convert.ToDateTime(row["EventTime"]).ToString("HH:mm:ss");
+                    string message = row["Message"].ToString();
+                    dataGridView1.Rows.Add(time, message);
+                }
+
+                // Auto-scroll to latest
+                if (dataGridView1.Rows.Count > 0)
+                {
+                    dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading past events: {ex.Message}");
+            }
         }
 
-        private void first_call_button_Click(object sender, EventArgs e)
-        {
-            if (!isBusy && liftContext.CurrentFloor != 1)
-                StartLift(1);
-        }
-
-        private void ground_btn_Click(object sender, EventArgs e)
-        {
-            if (!isBusy && liftContext.CurrentFloor != 0)
-                StartLift(0);
-        }
-
-        private void first_btn_Click(object sender, EventArgs e)
-        {
-            if (!isBusy && liftContext.CurrentFloor != 1)
-                StartLift(1);
-        }
-
-        // Door control handlers
         private void open_lift_btn_Click(object sender, EventArgs e)
         {
-            if (!isBusy && !isAnimatingDoor && !liftContext.IsDoorOpen)
-            {
-                StartDoorAnimation(true); // Open doors
-            }
+            _liftController.OpenDoor();
         }
 
         private void close_lift_btn_Click(object sender, EventArgs e)
         {
-            if (!isBusy && !isAnimatingDoor && liftContext.IsDoorOpen)
-            {
-                StartDoorAnimation(false); // Close doors
-            }
+            _liftController.CloseDoor();
         }
 
-        // Start door animation
-        private void StartDoorAnimation(bool opening)
+        private void first_btn_Click(object sender, EventArgs e)
         {
-            isAnimatingDoor = true;
-            isDoorOpening = opening;
-            doorAnimationStep = 0;
-
-            // Get the doors for current floor
-            PictureBox leftDoor = liftContext.CurrentFloor == 0
-                ? ground_lift_left_door_btn
-                : first_lift_left_door_btn;
-            PictureBox rightDoor = liftContext.CurrentFloor == 0
-                ? ground_lift_right_door_btn
-                : first_lift_right_door_btn;
-
-            // Store starting positions
-            leftDoorStartX = leftDoor.Left;
-            rightDoorStartX = rightDoor.Left;
-
-            // Start the timer
-            doorTimer.Start();
+            // Move to first floor from inside the lift
+            _liftController.MoveToFloor(1);
         }
 
-        // Timer tick event for door animation
-        private void doorTimer_Tick(object sender, EventArgs e)
+        private void ground_btn_Click(object sender, EventArgs e)
         {
-            doorAnimationStep++;
-
-            // Get the doors for current floor
-            PictureBox leftDoor = liftContext.CurrentFloor == 0
-                ? ground_lift_left_door_btn
-                : first_lift_left_door_btn;
-            PictureBox rightDoor = liftContext.CurrentFloor == 0
-                ? ground_lift_right_door_btn
-                : first_lift_right_door_btn;
-
-            if (isDoorOpening)
-            {
-                // Open doors (move apart)
-                leftDoor.Left = leftDoorStartX - doorAnimationStep;
-                rightDoor.Left = rightDoorStartX + doorAnimationStep;
-            }
-            else
-            {
-                // Close doors (move together)
-                leftDoor.Left = leftDoorStartX + doorAnimationStep;
-                rightDoor.Left = rightDoorStartX - doorAnimationStep;
-            }
-
-            // Check if animation is complete
-            if (doorAnimationStep >= DOOR_ANIMATION_STEPS)
-            {
-                doorTimer.Stop();
-                isAnimatingDoor = false;
-
-                // Update door state
-                if (isDoorOpening)
-                {
-                    liftContext.SetDoorState(new DoorOpenState());
-                    liftContext.DoorState.Enter(liftContext);
-                }
-                else
-                {
-                    liftContext.SetDoorState(new DoorClosedState());
-                    liftContext.DoorState.Enter(liftContext);
-                }
-
-                RefreshLogs();
-            }
+            // Move to ground floor from inside the lift
+            _liftController.MoveToFloor(0);
         }
 
-        private void StartLift(int targetFloor)
+        private void first_call_button_Click(object sender, EventArgs e)
         {
-            // Check if doors are closed before moving
-            if (liftContext.IsDoorOpen)
-            {
-                MessageBox.Show("Please close the doors before moving the lift!");
-                return;
-            }
-
-            if (!liftWorker.IsBusy)
-            {
-                isBusy = true;
-                liftWorker.RunWorkerAsync(targetFloor);
-            }
+            // External call from first floor
+            _liftController.MoveToFloor(1);
         }
 
-        private void liftWorker_DoWork(object sender, DoWorkEventArgs e)
+        private void ground_call_button_Click(object sender, EventArgs e)
         {
-            int targetFloor = (int)e.Argument;
-
-            if (targetFloor > liftContext.CurrentFloor) // Moving UP
-            {
-                liftContext.SetState(new MovingUpState());
-                liftContext.CurrentState.Enter(liftContext);
-
-                // Animate: move from Y=545 to Y=54
-                int startY = 545;
-                int endY = 54;
-                int steps = 50;
-                int pixelsPerStep = (startY - endY) / steps;
-
-                for (int i = 0; i < steps; i++)
-                {
-                    this.Invoke((Action)(() =>
-                    {
-                        lift_movable.Top = startY - (pixelsPerStep * i);
-                    }));
-                    System.Threading.Thread.Sleep(40);
-                }
-
-                this.Invoke((Action)(() =>
-                {
-                    lift_movable.Top = endY;
-                }));
-
-                liftContext.CurrentFloor = targetFloor;
-                liftContext.CurrentState.Exit(liftContext);
-            }
-            else if (targetFloor < liftContext.CurrentFloor) // Moving DOWN
-            {
-                liftContext.SetState(new MovingDownState());
-                liftContext.CurrentState.Enter(liftContext);
-
-                // Animate: move from Y=54 to Y=545
-                int startY = 54;
-                int endY = 545;
-                int steps = 50;
-                int pixelsPerStep = (endY - startY) / steps;
-
-                for (int i = 0; i < steps; i++)
-                {
-                    this.Invoke((Action)(() =>
-                    {
-                        lift_movable.Top = startY + (pixelsPerStep * i);
-                    }));
-                    System.Threading.Thread.Sleep(40);
-                }
-
-                this.Invoke((Action)(() =>
-                {
-                    lift_movable.Top = endY;
-                }));
-
-                liftContext.CurrentFloor = targetFloor;
-                liftContext.CurrentState.Exit(liftContext);
-            }
-        }
-
-        private void liftWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            isBusy = false;
-            liftContext.SetState(new IdleState());
-            liftContext.CurrentState.Enter(liftContext);
-
-            MessageBox.Show($"Lift reached floor {liftContext.CurrentFloor}");
-            RefreshLogs();
-        }
-
-        private void RefreshLogs()
-        {
-            dataGridView1.DataSource = null;
-            dataGridView1.DataSource = liftContext.Db.GetAllEvents();
+            // External call from ground floor
+            _liftController.MoveToFloor(0);
         }
     }
 }

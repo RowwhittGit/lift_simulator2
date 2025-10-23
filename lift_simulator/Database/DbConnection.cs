@@ -2,7 +2,7 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 
-namespace lift_simulator
+namespace lift_simulator.Database
 {
     public class DbConnection
     {
@@ -56,21 +56,31 @@ namespace lift_simulator
             }
         }
 
-        public void LogEvent(string eventType, string message)
+        public void LogEvent(string message)
         {
             using (var connection = new SqlConnection(ConnectionString))
             {
                 connection.Open();
+
                 var cmd = connection.CreateCommand();
+                cmd.CommandText = @"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='LiftEvents' AND xtype='U')
+            BEGIN
+                CREATE TABLE LiftEvents (
+                    Id INT IDENTITY(1,1) PRIMARY KEY,
+                    EventTime DATETIME DEFAULT GETDATE(),
+                    Message NVARCHAR(255)
+                );
+            END;
 
-                // Explicitly insert EventTime with GETDATE()
-                cmd.CommandText = $"INSERT INTO {tableName} (EventTime, EventType, Message) VALUES (GETDATE(), @EventType, @Message)";
+            INSERT INTO LiftEvents (Message) VALUES (@Message);
+        ";
 
-                cmd.Parameters.AddWithValue("@EventType", eventType);
                 cmd.Parameters.AddWithValue("@Message", message);
                 cmd.ExecuteNonQuery();
             }
         }
+
 
         public DataTable GetAllEvents()
         {

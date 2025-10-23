@@ -1,27 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using lift_simulator.Interfaces;
+using lift_simulator.Controllers;
 
 namespace lift_simulator.States
 {
     public class MovingDownState : ILiftState
     {
-        public void Enter(LiftContext context)
+        public void Enter(LiftController controller)
         {
-            context.Db.LogEvent("Lift Moving Down", "Lift started moving down...");
+            controller.Log("Moving down...");
         }
 
-        public void Execute(LiftContext context)
+        public void Exit(LiftController controller)
         {
-            // Will simulate lift moving down step by step later
+            controller.Log("Stopped moving down.");
         }
 
-        public void Exit(LiftContext context)
+        public void HandleRequest(LiftController controller, string request)
         {
-            context.Db.LogEvent("Lift Moving Down", "Lift stopped moving down.");
+            if (request == "Arrived")
+                controller.SetState(new DoorOpeningState());
         }
     }
 }
-

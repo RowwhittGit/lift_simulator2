@@ -3,22 +3,24 @@ using lift_simulator.Controllers;
 
 namespace lift_simulator.States
 {
-    public class MovingUpState : ILiftState
+    public class DoorClosingState : ILiftState
     {
         public void Enter(LiftController controller)
         {
-            controller.Log("Moving up...");
+            controller.Log("Door is closing...");
+            controller.IsDoorOpen = false;
+            controller.StartDoorTimer();
         }
 
         public void Exit(LiftController controller)
         {
-            controller.Log("Stopped moving up.");
+            controller.Log("Door finished closing.");
         }
 
         public void HandleRequest(LiftController controller, string request)
         {
-            if (request == "Arrived")
+            if (request == "OpenDoor")
                 controller.SetState(new DoorOpeningState());
         }
     }
-} // Add this closing brace
+}
