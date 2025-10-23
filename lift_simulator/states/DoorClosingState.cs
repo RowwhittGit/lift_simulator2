@@ -15,6 +15,7 @@ namespace lift_simulator.States
         public void Exit(LiftController controller)
         {
             controller.Log("Door finished closing.");
+            controller.ProcessQueue();
         }
 
         public void HandleRequest(LiftController controller, string request)

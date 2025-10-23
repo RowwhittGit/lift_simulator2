@@ -2,6 +2,7 @@
 using lift_simulator.Interfaces;
 using lift_simulator.States;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 
@@ -14,15 +15,17 @@ namespace lift_simulator.Controllers
         private readonly BackgroundWorker _worker;
         private readonly DbConnection _db;
 
+        // Add a queue to store floor requests
+        private Queue<int> _floorQueue = new Queue<int>();
+
         public int CurrentFloor { get; private set; } = 0;
-        public bool IsDoorOpen { get; set; } = false; // Changed to public setter
+        public bool IsDoorOpen { get; set; } = false;
         public bool IsBusy { get; private set; } = false;
 
         public event Action<string> OnStatusChanged;
         public event Action<int> OnFloorChanged;
         public event Action<string> OnDoorStateChanged;
 
-        // Add constructor that accepts DbConnection
         public LiftController(DbConnection db)
         {
             _db = db;
@@ -36,7 +39,6 @@ namespace lift_simulator.Controllers
             _currentState = new IdleState();
         }
 
-        // Keep the parameterless constructor for backward compatibility
         public LiftController()
         {
             _db = new DbConnection();
@@ -50,7 +52,6 @@ namespace lift_simulator.Controllers
             _currentState = new IdleState();
         }
 
-        // Add missing methods
         public void OpenDoor()
         {
             if (!IsBusy)
@@ -67,16 +68,35 @@ namespace lift_simulator.Controllers
             }
         }
 
+        // IMPROVED: MoveToFloor now adds to queue instead of ignoring
         public void MoveToFloor(int targetFloor)
         {
-            if (!IsBusy && targetFloor != CurrentFloor)
+            // Check if door is open - don't move if it is
+            if (IsDoorOpen)
             {
-                _worker.RunWorkerAsync(targetFloor);
+                Log($"Cannot move to floor {targetFloor}. Door is open!");
+                return;
             }
-            else if (targetFloor == CurrentFloor)
+
+            // Check if already at floor
+            if (targetFloor == CurrentFloor)
             {
                 Log($"Already at floor {targetFloor}");
                 OpenDoor();
+                return;
+            }
+
+            // If lift is not busy, start moving immediately
+            if (!IsBusy)
+            {
+                Log($"Moving to floor {targetFloor}");
+                _worker.RunWorkerAsync(targetFloor);
+            }
+            else
+            {
+                // If lift IS busy, add to queue to be processed later
+                _floorQueue.Enqueue(targetFloor);
+                Log($"Lift is busy. Added floor {targetFloor} to queue");
             }
         }
 
@@ -120,6 +140,28 @@ namespace lift_simulator.Controllers
 
             // Automatically open door when arrived
             OpenDoor();
+
+            // NEW: After completing this move, check if there are more floors in queue
+            ProcessQueue();
+        }
+
+        // NEW: Process the queue of waiting floor requests
+        public void ProcessQueue()
+        {
+            // If door is open, wait for it to close before processing next request
+            if (IsDoorOpen)
+            {
+                Log("Door is open. Waiting to close before next move");
+                return;
+            }
+
+            // If there are floors waiting in queue, move to the next one
+            if (_floorQueue.Count > 0)
+            {
+                int nextFloor = _floorQueue.Dequeue();
+                Log($"Processing queued request: Moving to floor {nextFloor}");
+                MoveToFloor(nextFloor);  // This will check conditions again
+            }
         }
 
         private void DoorTimer_Tick(object? sender, EventArgs e)

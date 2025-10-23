@@ -37,14 +37,8 @@ namespace lift_simulator
                 return;
             }
 
-            // Add to DataGridView safely
-            dataGridView1.Rows.Add(DateTime.Now.ToString("HH:mm:ss"), status);
-
-            // Auto-scroll to latest entry
-            if (dataGridView1.Rows.Count > 0)
-            {
-                dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
-            }
+            // Refresh DataGridView asynchronously so it doesn't freeze
+            Task.Run(() => LoadPastEvents());
         }
 
         private void UpdateLiftPosition(int floor)
@@ -169,14 +163,11 @@ namespace lift_simulator
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Setup DataGridView columns
-            dataGridView1.Columns.Clear();
-            dataGridView1.Columns.Add("Time", "Time");
-            dataGridView1.Columns.Add("Status", "Status");
+            // Setup DataGridView
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AutoGenerateColumns = true;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
 
-            // Optional: Adjust column widths
-            dataGridView1.Columns["Time"].Width = 100;
-            dataGridView1.Columns["Status"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
             // Load past events from database
             LoadPastEvents();
@@ -186,24 +177,31 @@ namespace lift_simulator
         {
             try
             {
+                // Get all events as DataTable (on background thread)
                 var events = _db.GetAllEvents();
 
-                foreach (System.Data.DataRow row in events.Rows)
+                // Always use Invoke to switch back to UI thread
+                Invoke(new Action(() =>
                 {
-                    string time = Convert.ToDateTime(row["EventTime"]).ToString("HH:mm:ss");
-                    string message = row["Message"].ToString();
-                    dataGridView1.Rows.Add(time, message);
-                }
+                    if (events != null && events.Rows.Count > 0)
+                    {
+                        dataGridView1.DataSource = null;
+                        dataGridView1.DataSource = events;
 
-                // Auto-scroll to latest
-                if (dataGridView1.Rows.Count > 0)
-                {
-                    dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
-                }
+                        // Auto-scroll to latest
+                        if (dataGridView1.Rows.Count > 0)
+                        {
+                            dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
+                            dataGridView1.Columns["EventTime"].Width = 100;  // Fixed width for time
+                            dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;  // Fill remaining space
+                            dataGridView1.Columns["Id"].Visible = false;  // Hide Id column if you don't need it
+                        }
+                    }
+                }));
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading past events: {ex.Message}");
+                Invoke(new Action(() => MessageBox.Show($"Error loading past events: {ex.Message}")));
             }
         }
 
@@ -231,14 +229,15 @@ namespace lift_simulator
 
         private void first_call_button_Click(object sender, EventArgs e)
         {
-            // External call from first floor
+            // External call from first floor - works like real lift
             _liftController.MoveToFloor(1);
         }
 
         private void ground_call_button_Click(object sender, EventArgs e)
         {
-            // External call from ground floor
+            // External call from ground floor - works like real lift
             _liftController.MoveToFloor(0);
         }
+
     }
 }
