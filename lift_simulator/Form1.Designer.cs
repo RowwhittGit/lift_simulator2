@@ -116,6 +116,7 @@
             first_lift_left_door_btn.Size = new Size(67, 188);
             first_lift_left_door_btn.TabIndex = 9;
             first_lift_left_door_btn.TabStop = false;
+            //first_lift_left_door_btn.Click += first_lift_left_door_btn_Click;
             // 
             // pictureBox11
             // 
@@ -157,7 +158,6 @@
             dataGridView1.RowHeadersWidth = 51;
             dataGridView1.Size = new Size(614, 437);
             dataGridView1.TabIndex = 13;
-            //dataGridView1.CellContentClick += dataGridView1_CellContentClick;
             // 
             // close_lift_btn
             // 

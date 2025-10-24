@@ -1,5 +1,6 @@
-﻿using lift_simulator.Interfaces;
-using lift_simulator.Controllers;
+﻿using lift_simulator.Controllers;
+using lift_simulator.Interfaces;
+using System.Threading.Tasks;
 
 namespace lift_simulator.States
 {
@@ -8,17 +9,44 @@ namespace lift_simulator.States
         public void Enter(LiftController controller)
         {
             controller.Log("Moving up...");
+            controller.SetBusy(true);
+            SimulateMovement(controller);
         }
 
         public void Exit(LiftController controller)
         {
-            controller.Log("Stopped moving up.");
+            controller.Log("Stopped moving up");
         }
+
+        public string GetStateName() => "MovingUpState";
 
         public void HandleRequest(LiftController controller, string request)
         {
-            if (request == "Arrived")
-                controller.SetState(new DoorOpeningState());
+            // Ignore requests while moving
+            if (request.StartsWith("MoveToFloor"))
+            {
+                controller.Log("Already moving. Request queued.");
+                return;
+            }
+
+            if (request == "OpenDoor")
+            {
+                controller.Log("Cannot open door while moving");
+                return;
+            }
+
+            if (request == "CloseDoor")
+            {
+                controller.Log("Door is not open");
+                return;
+            }
+        }
+
+        private async void SimulateMovement(LiftController controller)
+        {
+            await Task.Delay(2000);
+            controller.ArriveAtFloor(controller.TargetFloor);
+            controller.TransitionToState(new IdleState());
         }
     }
-} // Add this closing brace
+}

@@ -1,5 +1,6 @@
-﻿using lift_simulator.Interfaces;
-using lift_simulator.Controllers;
+﻿using lift_simulator.Controllers;
+using lift_simulator.Interfaces;
+using System.Threading.Tasks;
 
 namespace lift_simulator.States
 {
@@ -9,19 +10,41 @@ namespace lift_simulator.States
         {
             controller.Log("Door is closing...");
             controller.IsDoorOpen = false;
-            controller.StartDoorTimer();
+            SimulateDoorClosing(controller);
         }
 
         public void Exit(LiftController controller)
         {
-            controller.Log("Door finished closing.");
-            controller.ProcessQueue();
+            controller.Log("Door finished closing");
         }
+
+        public string GetStateName() => "DoorClosingState";
 
         public void HandleRequest(LiftController controller, string request)
         {
             if (request == "OpenDoor")
-                controller.SetState(new DoorOpeningState());
+            {
+                controller.TransitionToState(new DoorOpeningState());
+                return;
+            }
+
+            if (request == "CloseDoor")
+            {
+                controller.Log("Door is already closing");
+                return;
+            }
+
+            if (request.StartsWith("MoveToFloor"))
+            {
+                controller.Log("Door is closing. Please wait.");
+                return;
+            }
+        }
+
+        private async void SimulateDoorClosing(LiftController controller)
+        {
+            await Task.Delay(1000);
+            controller.TransitionToState(new DoorClosedState());
         }
     }
 }

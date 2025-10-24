@@ -7,31 +7,39 @@ namespace lift_simulator.States
     {
         public void Enter(LiftController controller)
         {
-            controller.Log("Lift is idle.");
+            controller.Log("Lift is now idle");
+            controller.SetBusy(false);
         }
 
         public void Exit(LiftController controller)
         {
-            controller.Log("Lift leaving idle state.");
+            controller.Log("Lift leaving idle state");
         }
+
+        public string GetStateName() => "IdleState";
 
         public void HandleRequest(LiftController controller, string request)
         {
-            switch (request)
+            if (request.StartsWith("MoveToFloor:"))
             {
-                case "OpenDoor":
-                    controller.SetState(new DoorOpeningState());
-                    break;
-                case "MoveToFloor1":
-                    controller.SetState(new MovingUpState());
-                    break;
-                case "MoveToFloor0":
-                    controller.SetState(new MovingDownState());
-                    break;
-                default:
-                    controller.Log($"Unhandled request {request} in IdleState.");
-                    break;
+                int targetFloor = int.Parse(request.Split(':')[1]);
+                controller.MoveToFloor(targetFloor);
+                return;
             }
+
+            if (request == "OpenDoor")
+            {
+                controller.TransitionToState(new DoorOpeningState());
+                return;
+            }
+
+            if (request == "CloseDoor")
+            {
+                controller.TransitionToState(new DoorClosingState());
+                return;
+            }
+
+            controller.Log($"Ignoring request while idle: {request}");
         }
     }
 }

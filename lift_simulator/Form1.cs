@@ -16,81 +16,71 @@ namespace lift_simulator
         {
             InitializeComponent();
 
-            // Initialize DB and controller
             _db = new DbConnection();
             _liftController = new LiftController(_db);
 
-            // Subscribe to controller events for UI feedback
             _liftController.OnStatusChanged += status => UpdateStatus(status);
             _liftController.OnFloorChanged += floor => UpdateLiftPosition(floor);
-            _liftController.OnDoorStateChanged += state => AnimateDoor(state);
+            _liftController.OnDoorStateChanged += isOpen => AnimateDoor(isOpen);
         }
-
-        // === UI Updates ===
 
         private void UpdateStatus(string status)
         {
-            // Ensure we're on the UI thread
             if (InvokeRequired)
             {
                 Invoke(new Action(() => UpdateStatus(status)));
                 return;
             }
 
-            // Refresh DataGridView asynchronously so it doesn't freeze
             Task.Run(() => LoadPastEvents());
         }
 
         private void UpdateLiftPosition(int floor)
         {
-            // Ensure we're on the UI thread
             if (InvokeRequired)
             {
                 Invoke(new Action(() => UpdateLiftPosition(floor)));
                 return;
             }
 
-            // Animate lift moving visually (0 = Ground, 1 = First)
             if (floor == 0)
             {
-                AnimateLiftMovement(545); // Ground floor position
+                AnimateLiftMovement(540);
             }
             else if (floor == 1)
             {
-                AnimateLiftMovement(120); // First floor position
+                AnimateLiftMovement(55);
             }
         }
 
         private async void AnimateLiftMovement(int targetY)
         {
-            // Smooth animation
             int currentY = lift_movable.Top;
-            int step = (targetY > currentY) ? 5 : -5;
+            int step = (targetY > currentY) ? 7 : -5;
 
             while ((step > 0 && lift_movable.Top < targetY) ||
                    (step < 0 && lift_movable.Top > targetY))
             {
                 lift_movable.Top += step;
-                await Task.Delay(20); // Smooth animation delay
+                await Task.Delay(25);
             }
 
-            lift_movable.Top = targetY; // Ensure exact position
+            lift_movable.Top = targetY;
         }
 
-        private void AnimateDoor(string state)
+        private void AnimateDoor(bool isOpen)
         {
-            // Ensure we're on the UI thread
             if (InvokeRequired)
             {
-                Invoke(new Action(() => AnimateDoor(state)));
+                Invoke(new Action(() => AnimateDoor(isOpen)));
                 return;
             }
 
-            if (state == "Open")
+            if (isOpen)
             {
                 AnimateDoorOpening();
             }
-            else if (state == "Closed")
+            else
             {
                 AnimateDoorClosing();
             }
@@ -98,7 +88,6 @@ namespace lift_simulator
 
         private async void AnimateDoorOpening()
         {
-            // Determine which floor's doors to animate based on lift position
             PictureBox leftDoor, rightDoor;
 
             if (_liftController.CurrentFloor == 0)
@@ -112,22 +101,16 @@ namespace lift_simulator
                 rightDoor = first_lift_right_door_btn;
             }
 
-            // Save original positions
-            int originalLeftX = leftDoor.Left;
-            int originalRightX = rightDoor.Left;
-
-            // Animate doors opening
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 18; i++)
             {
                 leftDoor.Left -= 2;
                 rightDoor.Left += 2;
-                await Task.Delay(30);
+                await Task.Delay(18);
             }
         }
 
         private async void AnimateDoorClosing()
         {
-            // Determine which floor's doors to animate
             PictureBox leftDoor, rightDoor;
             int targetLeftX, targetRightX;
 
@@ -135,8 +118,8 @@ namespace lift_simulator
             {
                 leftDoor = ground_lift_left_door_btn;
                 rightDoor = ground_lift_right_door_btn;
-                targetLeftX = 79;  // Original position from designer
-                targetRightX = 144; // Original position from designer
+                targetLeftX = 79;
+                targetRightX = 144;
             }
             else
             {
@@ -146,7 +129,6 @@ namespace lift_simulator
                 targetRightX = 144;
             }
 
-            // Animate doors closing back to original position
             while (leftDoor.Left < targetLeftX)
             {
                 leftDoor.Left += 2;
@@ -154,33 +136,32 @@ namespace lift_simulator
                 await Task.Delay(30);
             }
 
-            // Ensure exact position
             leftDoor.Left = targetLeftX;
             rightDoor.Left = targetRightX;
         }
 
-        // === Event Handlers ===
-
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Setup DataGridView
             dataGridView1.ReadOnly = true;
             dataGridView1.AutoGenerateColumns = true;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
 
-
-            // Load past events from database
             LoadPastEvents();
+
+            if (dataGridView1.Columns.Count > 0)
+            {
+                dataGridView1.Columns["EventTime"].Width = 100;
+                dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                dataGridView1.Columns["Id"].Visible = false;
+            }
         }
 
         private void LoadPastEvents()
         {
             try
             {
-                // Get all events as DataTable (on background thread)
                 var events = _db.GetAllEvents();
 
-                // Always use Invoke to switch back to UI thread
                 Invoke(new Action(() =>
                 {
                     if (events != null && events.Rows.Count > 0)
@@ -188,13 +169,9 @@ namespace lift_simulator
                         dataGridView1.DataSource = null;
                         dataGridView1.DataSource = events;
 
-                        // Auto-scroll to latest
                         if (dataGridView1.Rows.Count > 0)
                         {
                             dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
-                            dataGridView1.Columns["EventTime"].Width = 100;  // Fixed width for time
-                            dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;  // Fill remaining space
-                            dataGridView1.Columns["Id"].Visible = false;  // Hide Id column if you don't need it
                         }
                     }
                 }));
@@ -207,37 +184,32 @@ namespace lift_simulator
 
         private void open_lift_btn_Click(object sender, EventArgs e)
         {
-            _liftController.OpenDoor();
+            _liftController.RequestDoorOpen();
         }
 
         private void close_lift_btn_Click(object sender, EventArgs e)
         {
-            _liftController.CloseDoor();
+            _liftController.RequestDoorClose();
         }
 
         private void first_btn_Click(object sender, EventArgs e)
         {
-            // Move to first floor from inside the lift
-            _liftController.MoveToFloor(1);
+            _liftController.CallFloor(1);
         }
 
         private void ground_btn_Click(object sender, EventArgs e)
         {
-            // Move to ground floor from inside the lift
-            _liftController.MoveToFloor(0);
+            _liftController.CallFloor(0);
         }
 
         private void first_call_button_Click(object sender, EventArgs e)
         {
-            // External call from first floor - works like real lift
-            _liftController.MoveToFloor(1);
+            _liftController.CallFloor(1);
         }
 
         private void ground_call_button_Click(object sender, EventArgs e)
         {
-            // External call from ground floor - works like real lift
-            _liftController.MoveToFloor(0);
+            _liftController.CallFloor(0);
         }
-
     }
 }
