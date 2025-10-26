@@ -44,9 +44,13 @@ namespace lift_simulator.States
 
         private async void SimulateMovement(LiftController controller)
         {
+            await Task.Delay(2000); // Small delay to ensure state transition order
+            controller.TransitionToState(new IdleState());
             await Task.Delay(2000);
             controller.ArriveAtFloor(controller.TargetFloor);
-            controller.TransitionToState(new IdleState());
+
+            await Task.Delay(2000); // Simulate travel time
+            controller.ProcessQueue();
         }
     }
 }

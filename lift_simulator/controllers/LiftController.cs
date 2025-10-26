@@ -112,15 +112,19 @@ namespace lift_simulator.Controllers
         }
 
         // States call this when they arrive at target
-        public void ArriveAtFloor(int floor)
+        public async Task ArriveAtFloor(int floor)
         {
             CurrentFloor = floor;
-            IsBusy = false;
+            //IsBusy = false;
             OnFloorChanged?.Invoke(CurrentFloor);
             Log($"Lift arrived at floor {CurrentFloor}");
+            await Task.Delay(2500); // Small delay before opening door
 
             RequestDoorOpen();
-            ProcessQueue();
+            await Task.Delay(3000); // Keep door open for a while
+            RequestDoorClose();
+            //await Task.Delay(1000); // Small delay before processing next request
+            //ProcessQueue();
         }
 
         // Process queued floor requests
