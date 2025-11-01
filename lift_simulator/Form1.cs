@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using lift_simulator.Controllers;
 using lift_simulator.Database;
@@ -38,6 +37,53 @@ namespace lift_simulator
             _liftController.OnDoorStateChanged += isOpen => AnimateDoor(isOpen);
         }
 
+        #region Form Load & Initialization
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            InitializeDataGrid();
+            InitializeTimers();
+            InitializeBackgroundWorker();
+            LoadPastEvents();
+        }
+
+        private void InitializeDataGrid()
+        {
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AutoGenerateColumns = true;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+
+            if (dataGridView1.Columns.Count > 0)
+            {
+                dataGridView1.Columns["EventTime"].Width = 100;
+                dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                dataGridView1.Columns["Id"].Visible = false;
+            }
+        }
+
+        private void InitializeTimers()
+        {
+            // Lift Animation Timer
+            liftAnimationTimer = new System.Windows.Forms.Timer();
+            liftAnimationTimer.Interval = 25; // milliseconds
+            liftAnimationTimer.Tick += LiftAnimationTimer_Tick;
+
+            // Door Animation Timer
+            doorAnimationTimer = new System.Windows.Forms.Timer();
+            doorAnimationTimer.Interval = 18; // milliseconds
+            doorAnimationTimer.Tick += DoorAnimationTimer_Tick;
+        }
+
+        private void InitializeBackgroundWorker()
+        {
+            liftWorker.DoWork += LiftWorker_DoWork;
+            liftWorker.RunWorkerCompleted += LiftWorker_RunWorkerCompleted;
+        }
+
+        #endregion
+
+        #region Status Updates
+
         private void UpdateStatus(string status)
         {
             if (InvokeRequired)
@@ -46,7 +92,7 @@ namespace lift_simulator
                 return;
             }
 
-            Task.Run(() => LoadPastEvents());
+            LoadPastEvents();
         }
 
         private void UpdateLiftPosition(int floor)
@@ -69,6 +115,10 @@ namespace lift_simulator
                 AnimateLiftMovement(55);
             }
         }
+
+        #endregion
+
+        #region Lift Animation (Timer-based)
 
         private void AnimateLiftMovement(int targetY)
         {
@@ -95,6 +145,10 @@ namespace lift_simulator
             lift_movable.Top += liftStep;
             liftAnimationFrame++;
         }
+
+        #endregion
+
+        #region Door Animation (Timer-based)
 
         private void AnimateDoor(bool isOpen)
         {
@@ -129,7 +183,6 @@ namespace lift_simulator
 
             doorAnimationFrame = 0;
             isDoorOpening = true;
-
             doorAnimationTimer.Start();
         }
 
@@ -166,7 +219,6 @@ namespace lift_simulator
 
             doorAnimationFrame = 0;
             isDoorOpening = false;
-
             doorAnimationTimer.Start();
         }
 
@@ -198,57 +250,72 @@ namespace lift_simulator
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            dataGridView1.ReadOnly = true;
-            dataGridView1.AutoGenerateColumns = true;
-            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        #endregion
 
-            LoadPastEvents();
-
-            if (dataGridView1.Columns.Count > 0)
-            {
-                dataGridView1.Columns["EventTime"].Width = 100;
-                dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                dataGridView1.Columns["Id"].Visible = false;
-            }
-
-            // Initialize Lift Animation Timer
-            liftAnimationTimer = new System.Windows.Forms.Timer();
-            liftAnimationTimer.Interval = 25; // milliseconds
-            liftAnimationTimer.Tick += LiftAnimationTimer_Tick;
-
-            // Initialize Door Animation Timer
-            doorAnimationTimer = new System.Windows.Forms.Timer();
-            doorAnimationTimer.Interval = 18; // milliseconds
-            doorAnimationTimer.Tick += DoorAnimationTimer_Tick;
-        }
+        #region Database Operations (BackgroundWorker)
 
         private void LoadPastEvents()
         {
+            // Only load if BackgroundWorker is not already busy
+            if (!liftWorker.IsBusy)
+            {
+                liftWorker.RunWorkerAsync();
+            }
+        }
+
+        private void LiftWorker_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
             try
             {
+                // This runs on BACKGROUND THREAD - database operations here
                 var events = _db.GetAllEvents();
-
-                Invoke(new Action(() =>
-                {
-                    if (events != null && events.Rows.Count > 0)
-                    {
-                        dataGridView1.DataSource = null;
-                        dataGridView1.DataSource = events;
-
-                        if (dataGridView1.Rows.Count > 0)
-                        {
-                            dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
-                        }
-                    }
-                }));
+                e.Result = events;
             }
             catch (Exception ex)
             {
-                Invoke(new Action(() => MessageBox.Show($"Error loading past events: {ex.Message}")));
+                e.Cancel = true;
             }
         }
+
+        private void LiftWorker_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+        {
+            try
+            {
+                if (e.Cancelled)
+                {
+                    MessageBox.Show("Database operation was cancelled.");
+                    return;
+                }
+
+                if (e.Error != null)
+                {
+                    MessageBox.Show($"Error loading events: {e.Error.Message}");
+                    return;
+                }
+
+                // Update UI on MAIN THREAD
+                var events = (System.Data.DataTable)e.Result;
+
+                if (events != null && events.Rows.Count > 0)
+                {
+                    dataGridView1.DataSource = null;
+                    dataGridView1.DataSource = events;
+
+                    if (dataGridView1.Rows.Count > 0)
+                    {
+                        dataGridView1.FirstDisplayedScrollingRowIndex = dataGridView1.Rows.Count - 1;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating grid: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Button Click Handlers
 
         private void open_lift_btn_Click(object sender, EventArgs e)
         {
@@ -279,5 +346,7 @@ namespace lift_simulator
         {
             _liftController.CallFloor(0);
         }
+
+        #endregion
     }
 }

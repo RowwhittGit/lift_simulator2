@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             pictureBox2 = new PictureBox();
             ground_lift_left_door_btn = new PictureBox();
             lift_movable = new PictureBox();
@@ -201,6 +200,11 @@
             ground_btn.TabIndex = 17;
             ground_btn.TabStop = false;
             ground_btn.Click += ground_btn_Click;
+            // 
+            // liftWorker
+            // 
+            liftWorker.DoWork += LiftWorker_DoWork;
+            liftWorker.RunWorkerCompleted += LiftWorker_RunWorkerCompleted;
             // 
             // label_floor_display
             // 
