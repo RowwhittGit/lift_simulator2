@@ -22,25 +22,34 @@ namespace lift_simulator.States
 
         public void HandleRequest(LiftController controller, string request)
         {
-            // Ignore requests while moving
-            if (request.StartsWith("MoveToFloor"))
+            try
             {
-                controller.Log("Already moving. Request queued.");
-                return;
+
+                // Ignore requests while moving
+                if (request.StartsWith("MoveToFloor"))
+                {
+                    controller.Log("Already moving. Request queued.");
+                    return;
+                }
+
+                if (request == "OpenDoor")
+                {
+                    controller.Log("Cannot open door while moving");
+                    return;
+                }
+
+                if (request == "CloseDoor")
+                {
+                    controller.Log("Door is not open");
+                    return;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                controller.Log($"Error in HandleRequest of MovingDownState: {ex.Message}");
             }
 
-            if (request == "OpenDoor")
-            {
-                controller.Log("Cannot open door while moving");
-                return;
             }
-
-            if (request == "CloseDoor")
-            {
-                controller.Log("Door is not open");
-                return;
-            }
-        }
 
         private async void SimulateMovement(LiftController controller)
         {
