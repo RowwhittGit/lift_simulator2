@@ -35,6 +35,8 @@ namespace lift_simulator
             Task.Run(() => LoadPastEvents());
         }
 
+        // Replace your existing UpdateLiftPosition() method with this:
+
         private void UpdateLiftPosition(int floor)
         {
             if (InvokeRequired)
@@ -42,6 +44,9 @@ namespace lift_simulator
                 Invoke(new Action(() => UpdateLiftPosition(floor)));
                 return;
             }
+
+            // Update the floor display label
+            label_floor_display.Text = floor.ToString();
 
             if (floor == 0)
             {

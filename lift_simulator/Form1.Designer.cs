@@ -45,6 +45,7 @@
             ground_btn = new PictureBox();
             liftWorker = new System.ComponentModel.BackgroundWorker();
             doorTimer = new System.Windows.Forms.Timer(components);
+            label_floor_display = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)ground_lift_left_door_btn).BeginInit();
             ((System.ComponentModel.ISupportInitialize)lift_movable).BeginInit();
@@ -116,7 +117,6 @@
             first_lift_left_door_btn.Size = new Size(67, 188);
             first_lift_left_door_btn.TabIndex = 9;
             first_lift_left_door_btn.TabStop = false;
-            //first_lift_left_door_btn.Click += first_lift_left_door_btn_Click;
             // 
             // pictureBox11
             // 
@@ -203,11 +203,25 @@
             ground_btn.TabStop = false;
             ground_btn.Click += ground_btn_Click;
             // 
+            // label_floor_display
+            // 
+            label_floor_display.AutoSize = true;
+            label_floor_display.BackColor = SystemColors.MenuHighlight;
+            label_floor_display.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label_floor_display.ForeColor = SystemColors.ButtonHighlight;
+            label_floor_display.Location = new Point(557, 88);
+            label_floor_display.Name = "label_floor_display";
+            label_floor_display.Padding = new Padding(40, 20, 40, 20);
+            label_floor_display.Size = new Size(104, 68);
+            label_floor_display.TabIndex = 18;
+            label_floor_display.Text = "0";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1362, 750);
+            Controls.Add(label_floor_display);
             Controls.Add(ground_btn);
             Controls.Add(first_btn);
             Controls.Add(open_lift_btn);
@@ -240,6 +254,7 @@
             ((System.ComponentModel.ISupportInitialize)first_btn).EndInit();
             ((System.ComponentModel.ISupportInitialize)ground_btn).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -259,5 +274,6 @@
         private PictureBox ground_btn;
         private System.ComponentModel.BackgroundWorker liftWorker;
         private System.Windows.Forms.Timer doorTimer;
+        private Label label_floor_display;
     }
 }
