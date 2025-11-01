@@ -24,7 +24,7 @@
 
         /// <summary>
         ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
+        ///  the contents of this method by the code editor.
         /// </summary>
         private void InitializeComponent()
         {
@@ -44,7 +44,6 @@
             first_btn = new PictureBox();
             ground_btn = new PictureBox();
             liftWorker = new System.ComponentModel.BackgroundWorker();
-            doorTimer = new System.Windows.Forms.Timer(components);
             label_floor_display = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)ground_lift_left_door_btn).BeginInit();
@@ -273,7 +272,6 @@
         private PictureBox first_btn;
         private PictureBox ground_btn;
         private System.ComponentModel.BackgroundWorker liftWorker;
-        private System.Windows.Forms.Timer doorTimer;
         private Label label_floor_display;
     }
 }

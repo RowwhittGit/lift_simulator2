@@ -11,6 +11,20 @@ namespace lift_simulator
     {
         private readonly LiftController _liftController;
         private readonly DbConnection _db;
+        private System.Windows.Forms.Timer liftAnimationTimer;
+        private System.Windows.Forms.Timer doorAnimationTimer;
+
+        private int liftAnimationFrame = 0;
+        private int doorAnimationFrame = 0;
+        private int targetLiftY = 0;
+        private int currentLiftY = 0;
+        private int liftStep = 0;
+
+        private PictureBox currentLeftDoor;
+        private PictureBox currentRightDoor;
+        private int doorTargetLeftX = 0;
+        private int doorTargetRightX = 0;
+        private bool isDoorOpening = false;
 
         public Form1()
         {
@@ -35,8 +49,6 @@ namespace lift_simulator
             Task.Run(() => LoadPastEvents());
         }
 
-        // Replace your existing UpdateLiftPosition() method with this:
-
         private void UpdateLiftPosition(int floor)
         {
             if (InvokeRequired)
@@ -58,19 +70,30 @@ namespace lift_simulator
             }
         }
 
-        private async void AnimateLiftMovement(int targetY)
+        private void AnimateLiftMovement(int targetY)
         {
-            int currentY = lift_movable.Top;
-            int step = (targetY > currentY) ? 7 : -5;
+            targetLiftY = targetY;
+            currentLiftY = lift_movable.Top;
+            liftStep = (targetY > currentLiftY) ? 7 : -5;
+            liftAnimationFrame = 0;
 
-            while ((step > 0 && lift_movable.Top < targetY) ||
-                   (step < 0 && lift_movable.Top > targetY))
+            liftAnimationTimer.Start();
+        }
+
+        private void LiftAnimationTimer_Tick(object sender, EventArgs e)
+        {
+            // Check if we've reached the target
+            if ((liftStep > 0 && lift_movable.Top >= targetLiftY) ||
+                (liftStep < 0 && lift_movable.Top <= targetLiftY))
             {
-                lift_movable.Top += step;
-                await Task.Delay(25);
+                lift_movable.Top = targetLiftY;
+                liftAnimationTimer.Stop();
+                return;
             }
 
-            lift_movable.Top = targetY;
+            // Move lift one step
+            lift_movable.Top += liftStep;
+            liftAnimationFrame++;
         }
 
         private void AnimateDoor(bool isOpen)
@@ -91,58 +114,88 @@ namespace lift_simulator
             }
         }
 
-        private async void AnimateDoorOpening()
+        private void AnimateDoorOpening()
         {
-            PictureBox leftDoor, rightDoor;
-
             if (_liftController.CurrentFloor == 0)
             {
-                leftDoor = ground_lift_left_door_btn;
-                rightDoor = ground_lift_right_door_btn;
+                currentLeftDoor = ground_lift_left_door_btn;
+                currentRightDoor = ground_lift_right_door_btn;
             }
             else
             {
-                leftDoor = first_lift_left_door_btn;
-                rightDoor = first_lift_right_door_btn;
+                currentLeftDoor = first_lift_left_door_btn;
+                currentRightDoor = first_lift_right_door_btn;
             }
 
-            for (int i = 0; i < 18; i++)
+            doorAnimationFrame = 0;
+            isDoorOpening = true;
+
+            doorAnimationTimer.Start();
+        }
+
+        private void AnimateDoorFrame_Opening()
+        {
+            if (doorAnimationFrame < 18)
             {
-                leftDoor.Left -= 2;
-                rightDoor.Left += 2;
-                await Task.Delay(18);
+                currentLeftDoor.Left -= 2;
+                currentRightDoor.Left += 2;
+                doorAnimationFrame++;
+            }
+            else
+            {
+                doorAnimationTimer.Stop();
             }
         }
 
-        private async void AnimateDoorClosing()
+        private void AnimateDoorClosing()
         {
-            PictureBox leftDoor, rightDoor;
-            int targetLeftX, targetRightX;
-
             if (_liftController.CurrentFloor == 0)
             {
-                leftDoor = ground_lift_left_door_btn;
-                rightDoor = ground_lift_right_door_btn;
-                targetLeftX = 79;
-                targetRightX = 144;
+                currentLeftDoor = ground_lift_left_door_btn;
+                currentRightDoor = ground_lift_right_door_btn;
+                doorTargetLeftX = 79;
+                doorTargetRightX = 144;
             }
             else
             {
-                leftDoor = first_lift_left_door_btn;
-                rightDoor = first_lift_right_door_btn;
-                targetLeftX = 79;
-                targetRightX = 144;
+                currentLeftDoor = first_lift_left_door_btn;
+                currentRightDoor = first_lift_right_door_btn;
+                doorTargetLeftX = 79;
+                doorTargetRightX = 144;
             }
 
-            while (leftDoor.Left < targetLeftX)
+            doorAnimationFrame = 0;
+            isDoorOpening = false;
+
+            doorAnimationTimer.Start();
+        }
+
+        private void AnimateDoorFrame_Closing()
+        {
+            if (currentLeftDoor.Left < doorTargetLeftX)
             {
-                leftDoor.Left += 2;
-                rightDoor.Left -= 2;
-                await Task.Delay(30);
+                currentLeftDoor.Left += 2;
+                currentRightDoor.Left -= 2;
+                doorAnimationFrame++;
             }
+            else
+            {
+                currentLeftDoor.Left = doorTargetLeftX;
+                currentRightDoor.Left = doorTargetRightX;
+                doorAnimationTimer.Stop();
+            }
+        }
 
-            leftDoor.Left = targetLeftX;
-            rightDoor.Left = targetRightX;
+        private void DoorAnimationTimer_Tick(object sender, EventArgs e)
+        {
+            if (isDoorOpening)
+            {
+                AnimateDoorFrame_Opening();
+            }
+            else
+            {
+                AnimateDoorFrame_Closing();
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -159,6 +212,16 @@ namespace lift_simulator
                 dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                 dataGridView1.Columns["Id"].Visible = false;
             }
+
+            // Initialize Lift Animation Timer
+            liftAnimationTimer = new System.Windows.Forms.Timer();
+            liftAnimationTimer.Interval = 25; // milliseconds
+            liftAnimationTimer.Tick += LiftAnimationTimer_Tick;
+
+            // Initialize Door Animation Timer
+            doorAnimationTimer = new System.Windows.Forms.Timer();
+            doorAnimationTimer.Interval = 18; // milliseconds
+            doorAnimationTimer.Tick += DoorAnimationTimer_Tick;
         }
 
         private void LoadPastEvents()
