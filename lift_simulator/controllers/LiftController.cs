@@ -22,16 +22,10 @@ namespace lift_simulator.Controllers
         public event Action<int> OnFloorChanged;          // Floor changed
         public event Action<bool> OnDoorStateChanged;     // Door opened/closed
 
+        // ONLY this constructor - no parameterless one!
         public LiftController(DbConnection db)
         {
             _db = db;
-            _currentState = new IdleState();
-            _currentState.Enter(this);
-        }
-
-        public LiftController()
-        {
-            _db = new DbConnection();
             _currentState = new IdleState();
             _currentState.Enter(this);
         }
@@ -115,7 +109,6 @@ namespace lift_simulator.Controllers
         public async Task ArriveAtFloor(int floor)
         {
             CurrentFloor = floor;
-            //IsBusy = false;
             OnFloorChanged?.Invoke(CurrentFloor);
             Log($"Lift arrived at floor {CurrentFloor}");
             await Task.Delay(2500); // Small delay before opening door
@@ -123,8 +116,6 @@ namespace lift_simulator.Controllers
             RequestDoorOpen();
             await Task.Delay(3000); // Keep door open for a while
             RequestDoorClose();
-            //await Task.Delay(1000); // Small delay before processing next request
-            //ProcessQueue();
         }
 
         // Process queued floor requests
