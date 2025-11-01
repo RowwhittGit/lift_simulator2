@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace lift_simulator.States
 {
-    public class MovinDownState : ILiftState
+    public class MovingDownState : ILiftState
     {
         public void Enter(LiftController controller)
         {
