@@ -46,7 +46,7 @@ namespace lift_simulator.States
         {
             await Task.Delay(2000);
             controller.ArriveAtFloor(controller.TargetFloor);
-            await Task.Delay(2000); // Small delay to ensure state transition order
+            await Task.Delay(2000); 
             controller.TransitionToState(new IdleState());
 
 

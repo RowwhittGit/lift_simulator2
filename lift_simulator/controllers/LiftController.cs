@@ -17,12 +17,11 @@ namespace lift_simulator.Controllers
         public bool IsDoorOpen { get; set; } = false;
         public bool IsBusy { get; private set; } = false;
 
-        // Events - ONLY controller fires these
+
         public event Action<string> OnStatusChanged;      // State name changed
         public event Action<int> OnFloorChanged;          // Floor changed
         public event Action<bool> OnDoorStateChanged;     // Door opened/closed
 
-        // ONLY this constructor - no parameterless one!
         public LiftController(DbConnection db)
         {
             _db = db;

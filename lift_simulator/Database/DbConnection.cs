@@ -124,5 +124,24 @@ namespace lift_simulator.Database
                 return new DataTable();
             }
         }
+
+        public void DeleteAllEvents()
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = $"DELETE FROM {tableName}";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DeleteAllEvents error: {ex.Message}");
+                throw new Exception($"Error deleting events: {ex.Message}", ex);
+            }
+        }
     }
 }

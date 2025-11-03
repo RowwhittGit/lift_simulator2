@@ -41,12 +41,52 @@ namespace lift_simulator
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Set form background to light gray
+            this.BackColor = Color.FromArgb(240, 240, 240);
+
+            // Style the dataGridView
+            dataGridView1.BackgroundColor = Color.FromArgb(255, 255, 255);
+            dataGridView1.GridColor = Color.FromArgb(220, 220, 220);
+            dataGridView1.ForeColor = Color.FromArgb(60, 60, 60);
+            dataGridView1.RowHeadersVisible = false;
+
+            // Header styling
+            DataGridViewCellStyle headerStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(230, 230, 230),
+                ForeColor = Color.FromArgb(50, 50, 50),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            };
+            dataGridView1.ColumnHeadersDefaultCellStyle = headerStyle;
+            dataGridView1.ColumnHeadersHeight = 30;
+
+            // Row styling
+            DataGridViewCellStyle rowStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(255, 255, 255),
+                ForeColor = Color.FromArgb(60, 60, 60),
+                Font = new Font("Segoe UI", 9),
+            };
+            dataGridView1.DefaultCellStyle = rowStyle;
+
+            // Alternating row colors
+            DataGridViewCellStyle alternateRowStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(248, 248, 250),
+                ForeColor = Color.FromArgb(60, 60, 60),
+                Font = new Font("Segoe UI", 9),
+            };
+            dataGridView1.AlternatingRowsDefaultCellStyle = alternateRowStyle;
+
+            // Update floor display label color
+            label_floor_display.BackColor = Color.FromArgb(100, 150, 200);
+            label_floor_display.ForeColor = Color.White;
+
             InitializeDataGrid();
             InitializeTimers();
             InitializeBackgroundWorker();
             LoadPastEvents();
         }
-
         private void InitializeDataGrid()
         {
             dataGridView1.ReadOnly = true;
@@ -372,5 +412,28 @@ namespace lift_simulator
         }
 
         #endregion
+
+
+        private void delete_logs_btn_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to delete all logs? This cannot be undone.",
+                "Confirm Delete",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    _db.DeleteAllEvents();
+                    MessageBox.Show("All logs have been deleted.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadPastEvents();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
     }
 }

@@ -45,6 +45,7 @@
             ground_btn = new PictureBox();
             liftWorker = new System.ComponentModel.BackgroundWorker();
             label_floor_display = new Label();
+            delete_logs_btn = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)ground_lift_left_door_btn).BeginInit();
             ((System.ComponentModel.ISupportInitialize)lift_movable).BeginInit();
@@ -183,7 +184,7 @@
             // first_btn
             // 
             first_btn.Image = Properties.Resources.first_floor_button;
-            first_btn.Location = new Point(544, 161);
+            first_btn.Location = new Point(544, 171);
             first_btn.Name = "first_btn";
             first_btn.Size = new Size(126, 104);
             first_btn.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -194,7 +195,7 @@
             // ground_btn
             // 
             ground_btn.Image = Properties.Resources.ground_floor_button;
-            ground_btn.Location = new Point(544, 381);
+            ground_btn.Location = new Point(544, 372);
             ground_btn.Name = "ground_btn";
             ground_btn.Size = new Size(126, 104);
             ground_btn.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -213,18 +214,29 @@
             label_floor_display.BackColor = SystemColors.MenuHighlight;
             label_floor_display.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label_floor_display.ForeColor = SystemColors.ButtonHighlight;
-            label_floor_display.Location = new Point(557, 88);
+            label_floor_display.Location = new Point(556, 100);
             label_floor_display.Name = "label_floor_display";
             label_floor_display.Padding = new Padding(40, 20, 40, 20);
             label_floor_display.Size = new Size(104, 68);
             label_floor_display.TabIndex = 18;
             label_floor_display.Text = "0";
             // 
+            // delete_logs_btn
+            // 
+            delete_logs_btn.Location = new Point(736, 479);
+            delete_logs_btn.Name = "delete_logs_btn";
+            delete_logs_btn.Size = new Size(190, 29);
+            delete_logs_btn.TabIndex = 19;
+            delete_logs_btn.Text = "Delete all Logs";
+            delete_logs_btn.UseVisualStyleBackColor = true;
+            delete_logs_btn.Click += delete_logs_btn_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1362, 750);
+            Controls.Add(delete_logs_btn);
             Controls.Add(label_floor_display);
             Controls.Add(ground_btn);
             Controls.Add(first_btn);
@@ -278,5 +290,6 @@
         private PictureBox ground_btn;
         private System.ComponentModel.BackgroundWorker liftWorker;
         private Label label_floor_display;
+        private Button delete_logs_btn;
     }
 }
