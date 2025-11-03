@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             pictureBox2 = new PictureBox();
             ground_lift_left_door_btn = new PictureBox();
             lift_movable = new PictureBox();
@@ -63,7 +64,7 @@
             // pictureBox2
             // 
             pictureBox2.Image = Properties.Resources.image1;
-            pictureBox2.Location = new Point(-1, 490);
+            pictureBox2.Location = new Point(-1, 496);
             pictureBox2.Name = "pictureBox2";
             pictureBox2.Size = new Size(285, 256);
             pictureBox2.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -73,7 +74,7 @@
             // ground_lift_left_door_btn
             // 
             ground_lift_left_door_btn.Image = Properties.Resources.unnamed1;
-            ground_lift_left_door_btn.Location = new Point(79, 535);
+            ground_lift_left_door_btn.Location = new Point(79, 543);
             ground_lift_left_door_btn.Name = "ground_lift_left_door_btn";
             ground_lift_left_door_btn.Size = new Size(67, 188);
             ground_lift_left_door_btn.TabIndex = 4;
@@ -81,8 +82,8 @@
             // 
             // lift_movable
             // 
-            lift_movable.Image = Properties.Resources.Screenshot_2025_10_15_1318531;
-            lift_movable.Location = new Point(309, 545);
+            lift_movable.Image = (Image)resources.GetObject("lift_movable.Image");
+            lift_movable.Location = new Point(79, 543);
             lift_movable.Name = "lift_movable";
             lift_movable.Size = new Size(123, 201);
             lift_movable.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -92,7 +93,7 @@
             // ground_lift_right_door_btn
             // 
             ground_lift_right_door_btn.Image = Properties.Resources.unnamed1;
-            ground_lift_right_door_btn.Location = new Point(144, 535);
+            ground_lift_right_door_btn.Location = new Point(144, 543);
             ground_lift_right_door_btn.Name = "ground_lift_right_door_btn";
             ground_lift_right_door_btn.Size = new Size(63, 188);
             ground_lift_right_door_btn.TabIndex = 7;
@@ -236,9 +237,9 @@
             Controls.Add(first_lift_left_door_btn);
             Controls.Add(pictureBox11);
             Controls.Add(ground_lift_right_door_btn);
-            Controls.Add(lift_movable);
             Controls.Add(ground_lift_left_door_btn);
             Controls.Add(pictureBox2);
+            Controls.Add(lift_movable);
             Name = "Form1";
             Text = "Form1";
             Load += Form1_Load;

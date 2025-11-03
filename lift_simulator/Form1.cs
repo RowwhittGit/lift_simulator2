@@ -188,14 +188,18 @@ namespace lift_simulator
 
         private void AnimateDoorFrame_Opening()
         {
-            if (doorAnimationFrame < 18)
+            int doorTargetLeftX = 30;   // How far left door should move left
+            int doorTargetRightX = 194; // How far right door should move right
+
+            if (currentLeftDoor.Left > doorTargetLeftX)
             {
                 currentLeftDoor.Left -= 2;
                 currentRightDoor.Left += 2;
-                doorAnimationFrame++;
             }
             else
             {
+                currentLeftDoor.Left = doorTargetLeftX;
+                currentRightDoor.Left = doorTargetRightX;
                 doorAnimationTimer.Stop();
             }
         }
@@ -206,14 +210,14 @@ namespace lift_simulator
             {
                 currentLeftDoor = ground_lift_left_door_btn;
                 currentRightDoor = ground_lift_right_door_btn;
-                doorTargetLeftX = 79;
+                doorTargetLeftX = 80;
                 doorTargetRightX = 144;
             }
             else
             {
                 currentLeftDoor = first_lift_left_door_btn;
                 currentRightDoor = first_lift_right_door_btn;
-                doorTargetLeftX = 79;
+                doorTargetLeftX = 80;
                 doorTargetRightX = 144;
             }
 
