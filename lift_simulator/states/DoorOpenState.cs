@@ -32,9 +32,15 @@ namespace lift_simulator.States
                 return;
             }
 
-            if (request.StartsWith("MoveToFloor"))
+            if (request.StartsWith("MoveToFloor:"))
             {
-                controller.Log("Cannot move - door is open. Please close the door first.");
+                // Extract the target floor
+                int targetFloor = int.Parse(request.Split(':')[1]);
+
+                controller.Log($"Door is open. Automatically closing door and moving to floor {targetFloor}");
+
+                // Automatically close the door without waiting for user action
+                controller.TransitionToState(new DoorClosingState());
                 return;
             }
         }

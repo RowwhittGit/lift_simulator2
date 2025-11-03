@@ -53,16 +53,21 @@ namespace lift_simulator.Controllers
         // External call to move to a floor
         public void CallFloor(int targetFloor)
         {
-            if (IsDoorOpen)
-            {
-                Log($"Cannot move to floor {targetFloor}. Door is open!");
-                return;
-            }
-
             if (targetFloor == CurrentFloor)
             {
                 Log($"Already at floor {targetFloor}");
                 _currentState.HandleRequest(this, "OpenDoor");
+                return;
+            }
+
+            if (IsDoorOpen)
+            {
+                // Queue the request AND tell the state to close the door
+                _floorQueue.Enqueue(targetFloor);
+                Log($"Door is open. Added floor {targetFloor} to queue");
+
+                // Trigger door close - this will cause DoorOpenState to close automatically
+                _currentState.HandleRequest(this, $"MoveToFloor:{targetFloor}");
                 return;
             }
 
@@ -77,7 +82,6 @@ namespace lift_simulator.Controllers
                 Log($"Lift is busy. Added floor {targetFloor} to queue");
             }
         }
-
         // Door requests from UI
         public void RequestDoorOpen()
         {
