@@ -52,13 +52,8 @@ namespace lift_simulator
             dataGridView1.ReadOnly = true;
             dataGridView1.AutoGenerateColumns = true;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-
-            if (dataGridView1.Columns.Count > 0)
-            {
-                dataGridView1.Columns["EventTime"].Width = 100;
-                dataGridView1.Columns["Message"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                dataGridView1.Columns["Id"].Visible = false;
-            }
+            dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.AllowUserToDeleteRows = false;
         }
 
         private void InitializeTimers()
@@ -297,13 +292,13 @@ namespace lift_simulator
                     return;
                 }
 
-                // Update UI on MAIN THREAD
                 var events = (System.Data.DataTable)e.Result;
 
                 if (events != null && events.Rows.Count > 0)
                 {
                     dataGridView1.DataSource = null;
                     dataGridView1.DataSource = events;
+                    ResizeDataGridColumns();
 
                     if (dataGridView1.Rows.Count > 0)
                     {
@@ -317,6 +312,31 @@ namespace lift_simulator
             }
         }
 
+        private void ResizeDataGridColumns()
+        {
+            if (dataGridView1.Columns.Count == 0)
+                return;
+
+            if (dataGridView1.Columns.Contains("Id"))
+            {
+                dataGridView1.Columns["Id"].Visible = false;
+            }
+
+            int totalWidth = dataGridView1.Width;
+            int eventTimeWidth = 150;
+
+            if (dataGridView1.Columns.Contains("EventTime"))
+            {
+                dataGridView1.Columns["EventTime"].Width = eventTimeWidth;
+            }
+
+            int messageWidth = totalWidth - eventTimeWidth - 30;
+
+            if (dataGridView1.Columns.Contains("Message"))
+            {
+                dataGridView1.Columns["Message"].Width = messageWidth;
+            }
+        }
         #endregion
 
         #region Button Click Handlers
