@@ -427,6 +427,12 @@ namespace lift_simulator
                 {
                     _db.DeleteAllEvents();
                     MessageBox.Show("All logs have been deleted.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Clear the grid immediately
+                    dataGridView1.DataSource = null;
+                    dataGridView1.Refresh();
+
+                    // Then load the updated (empty) data
                     LoadPastEvents();
                 }
                 catch (Exception ex)
