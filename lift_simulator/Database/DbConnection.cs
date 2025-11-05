@@ -18,7 +18,6 @@ namespace lift_simulator.Database
         {
             try
             {
-                // Read from App.config - portable!
                 masterConnectionString = ConfigurationManager.ConnectionStrings["LiftSimulatorMaster"]?.ConnectionString
                     ?? throw new ConfigurationErrorsException("Connection string 'LiftSimulatorMaster' not found");
 
@@ -86,13 +85,28 @@ namespace lift_simulator.Database
         {
             try
             {
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Message", typeof(string));
+                dt.Columns.Add("EventTime", typeof(DateTime));
+
+                DataRow row = dt.NewRow();
+                row["Message"] = message;
+                row["EventTime"] = DateTime.Now;
+                dt.Rows.Add(row);
+
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
-                    var cmd = connection.CreateCommand();
-                    cmd.CommandText = "INSERT INTO LiftEvents (Message) VALUES (@Message)";
-                    cmd.Parameters.AddWithValue("@Message", message);
-                    cmd.ExecuteNonQuery();
+
+                    SqlDataAdapter adapter = new SqlDataAdapter();
+                    adapter.InsertCommand = new SqlCommand(
+                        "INSERT INTO LiftEvents (Message, EventTime) VALUES (@Message, @EventTime)",
+                        connection);
+
+                    adapter.InsertCommand.Parameters.Add("@Message", SqlDbType.NVarChar, 500).SourceColumn = "Message";
+                    adapter.InsertCommand.Parameters.Add("@EventTime", SqlDbType.DateTime).SourceColumn = "EventTime";
+
+                    adapter.Update(dt);
                 }
             }
             catch (Exception ex)
@@ -111,10 +125,13 @@ namespace lift_simulator.Database
                     connection.Open();
                     var cmd = connection.CreateCommand();
                     cmd.CommandText = $"SELECT Id, EventTime, Message FROM {tableName} ORDER BY EventTime";
+
+                    // DataAdapter loads data into memory
                     using (var adapter = new SqlDataAdapter(cmd))
                     {
                         adapter.Fill(dt);
                     }
+                    // Connection closes here, but data remains in DataTable
                 }
                 return dt;
             }
@@ -129,12 +146,34 @@ namespace lift_simulator.Database
         {
             try
             {
+                DataTable dt = new DataTable();
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
-                    var cmd = connection.CreateCommand();
-                    cmd.CommandText = $"DELETE FROM {tableName}";
-                    cmd.ExecuteNonQuery();
+                    var cmd = new SqlCommand($"SELECT Id FROM {tableName}", connection);
+                    using (var adapter = new SqlDataAdapter(cmd))
+                    {
+                        adapter.Fill(dt);
+                    }
+                }
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    row.Delete();
+                }
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    SqlDataAdapter adapter = new SqlDataAdapter();
+                    adapter.DeleteCommand = new SqlCommand(
+                        $"DELETE FROM {tableName} WHERE Id = @Id",
+                        connection);
+
+                    adapter.DeleteCommand.Parameters.Add("@Id", SqlDbType.Int).SourceColumn = "Id";
+
+                    adapter.Update(dt);
                 }
             }
             catch (Exception ex)
